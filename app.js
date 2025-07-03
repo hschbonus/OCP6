@@ -4,9 +4,8 @@ const mongoose = require('mongoose');
 const bookRoutes = require('./routes/book');
 const userRoutes = require('./routes/user');
 
-mongoose.connect('mongodb+srv://user1:1234@mvg-db.nnfg1ki.mongodb.net/?retryWrites=true&w=majority&appName=MVG-db',
-  { useNewUrlParser: true,
-    useUnifiedTopology: true })
+mongoose.connect('mongodb+srv://user1:1234@MVG-db.nnfg1ki.mongodb.net/MVG-db?retryWrites=true&w=majority&appName=MVG-db')
+
   .then(() => console.log('Connexion à MongoDB réussie !'))
   .catch(() => console.log('Connexion à MongoDB échouée !'));
 
@@ -23,5 +22,7 @@ app.use((req, res, next) => {
 
 app.use('/api/books', bookRoutes);
 app.use('/api/auth', userRoutes);
+app.use('/images', express.static('images'));
+
 
 module.exports = app;
