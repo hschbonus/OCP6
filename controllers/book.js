@@ -1,4 +1,6 @@
 const Book = require('../models/Book');
+const { ObjectId } = require('mongoose').Types;
+
 
 exports.createBook = (req, res) => {
   const bookObject = JSON.parse(req.body.book);
@@ -32,27 +34,35 @@ exports.deleteBook = (req, res) => {
     .catch(error => res.status(400).json({ error }));
 }
 
-exports.addGrade = (req, res) => {
-  const newGrade = {
-    userId: req.body.userId,
-    grade: req.body.rating
-  };
+exports.addGrade = async (req, res) => {
+  try {
+    const newGrade = {
+      userId: req.body.userId,
+      grade: req.body.rating
+    };
 
-  Book.updateOne(
-    { _id: req.params.id },
-    { $push: { ratings: newGrade } },
-  )
-    .then(async () => {
-      const updatedBook = await Book.findOne({ _id: req.params.id });
-      if (!updatedBook) {
-        return res.status(404).json({ message: 'Livre non trouvé.' });
-      }
+    await Book.updateOne(
+      { _id: req.params.id },
+      { $push: { ratings: newGrade } }
+    );
 
-      const bookObject = updatedBook.toObject();
-      bookObject.id = bookObject._id;
+    const avgResult = await Book.aggregate([
+      { $match: { _id: new ObjectId(req.params.id) } },
+      { $project: { averageRating: { $avg: '$ratings.grade' } } }
+    ]);
 
-      res.status(201).json(bookObject);
-    })
-    .catch(error => res.status(400).json({ error }));
+    const rawAverage = avgResult[0]?.averageRating || 0;
+    
+    const averageRating = Math.round(rawAverage);
+
+    const updatedBook = await Book.findOneAndUpdate(
+      { _id: req.params.id },
+      { averageRating: averageRating },
+      { new: true }
+    );
+
+    res.status(201).json(updatedBook.toObject());
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
 };
-
