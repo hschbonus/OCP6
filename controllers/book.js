@@ -1,5 +1,6 @@
 const Book = require('../models/Book');
 const { ObjectId } = require('mongoose').Types;
+const fs = require('fs');
 
 
 exports.createBook = (req, res) => {
@@ -29,10 +30,22 @@ exports.getOneBook = (req, res) => {
 };
 
 exports.deleteBook = (req, res) => {
-  Book.deleteOne({ _id: req.params.id })
-    .then(() => res.status(200).json({ message: 'Livre supprimé !' }))
-    .catch(error => res.status(400).json({ error }));
-}
+  Book.findOne({ _id: req.params.id })
+    .then(book => {
+      const filename = book.imageUrl.split('/images/')[1];
+      fs.unlink(`images/${filename}`, (err) => {
+        if (err) {
+          console.error('Erreur lors de la suppression de l’image :', err);
+          return res.status(500).json({ error: 'Erreur lors de la suppression de l’image' });
+        }
+
+        Book.deleteOne({ _id: req.params.id })
+          .then(() => res.status(200).json({ message: 'Livre supprimé avec image !' }))
+          .catch(error => res.status(400).json({ error }));
+      });
+    })
+    .catch(error => res.status(500).json({ error }));
+};
 
 exports.addGrade = async (req, res) => {
   try {
