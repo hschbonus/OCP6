@@ -15,6 +15,37 @@ exports.createBook = (req, res) => {
     .catch(error => res.status(400).json({ error }));
 }
 
+exports.updateBook = (req, res) => {
+  let bookObject;
+  try {
+    bookObject = JSON.parse(req.body.book);
+  } catch (err) {
+    return res.status(400).json({ error: 'JSON invalide dans book.' });
+  }
+
+  delete bookObject._id;
+  delete bookObject._userId;
+  delete bookObject.userId;
+  delete bookObject.ratings;
+  delete bookObject.averageRating;
+
+  if (req.file) {
+    bookObject.imageUrl = `${req.protocol}://${req.get('host')}/images/${req.file.filename}`;
+  } else {
+    delete bookObject.imageUrl;
+  }
+  Book.findOne({ _id: req.params.id })
+    .then(book => {
+      const filename = book.imageUrl.split('/images/')[1];
+      fs.unlink(`images/${filename}`, () => {
+        Book.updateOne({ _id: req.params.id }, { $set: bookObject })
+          .then(() => res.status(200).json({ message: 'Livre modifié !' }))
+          .catch(error => res.status(400).json({ error }));
+      });
+    })
+    .catch(error => res.status(500).json({ error }));
+};
+
 exports.getAllBooks = (req, res) => {
   Book.find()
     .then(books => res.status(200).json(books))
@@ -33,14 +64,9 @@ exports.deleteBook = (req, res) => {
   Book.findOne({ _id: req.params.id })
     .then(book => {
       const filename = book.imageUrl.split('/images/')[1];
-      fs.unlink(`images/${filename}`, (err) => {
-        if (err) {
-          console.error('Erreur lors de la suppression de l’image :', err);
-          return res.status(500).json({ error: 'Erreur lors de la suppression de l’image' });
-        }
-
+      fs.unlink(`images/${filename}`, () => {
         Book.deleteOne({ _id: req.params.id })
-          .then(() => res.status(200).json({ message: 'Livre supprimé avec image !' }))
+          .then(() => res.status(200).json({ message: 'Livre supprimé !' }))
           .catch(error => res.status(400).json({ error }));
       });
     })
@@ -79,3 +105,5 @@ exports.addGrade = async (req, res) => {
     res.status(400).json({ error: error.message });
   }
 };
+
+  
