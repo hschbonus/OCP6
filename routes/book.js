@@ -5,7 +5,7 @@ const multer = require('../middleware/multer-config');
 const convertImageToWebp = require('../middleware/convert');
 const booksCtrl = require('../controllers/book');
 
-router.post('/', multer, convertImageToWebp, booksCtrl.createBook);
+router.post('/', auth, multer, convertImageToWebp, booksCtrl.createBook);
 router.get('/', booksCtrl.getAllBooks);
 router.get('/bestrating', booksCtrl.getTop3Books);
 router.get('/:id', booksCtrl.getOneBook);
